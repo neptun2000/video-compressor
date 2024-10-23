@@ -23,6 +23,14 @@ args = "Create Test Video"
 task = "workflow.run"
 args = "Compress Video"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Create Large Test Video"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Compress Large Video"
+
 [[workflows.workflow]]
 name = "Video Compressor Tests"
 author = "agent"
@@ -55,6 +63,28 @@ agentRequireRestartOnSave = false
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python video_compressor.py test_video.mov"
+
+[[workflows.workflow]]
+name = "Create Large Test Video"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python create_large_test_video.py"
+
+[[workflows.workflow]]
+name = "Compress Large Video"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python video_compressor.py large_test_video.mov --large"
 
 [deployment]
 run = ["sh", "-c", "python -m unittest test_video_compressor.py"]
