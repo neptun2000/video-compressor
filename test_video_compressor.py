@@ -23,6 +23,49 @@ class TestVideoCompressor(unittest.TestCase):
         expected = "/path/to/video_compressed.mov"
         self.assertEqual(self.compressor.get_output_path(input_path), expected)
 
+    def test_validate_quality_settings_valid(self):
+        """Test validation of valid quality settings"""
+        settings = {
+            'crf': 23,
+            'preset': 'medium',
+            'audio_bitrate': '128k'
+        }
+        is_valid, _ = self.compressor.validate_quality_settings(settings)
+        self.assertTrue(is_valid)
+
+    def test_validate_quality_settings_invalid_crf(self):
+        """Test validation of invalid CRF value"""
+        settings = {
+            'crf': 52,  # Invalid: should be 0-51
+            'preset': 'medium',
+            'audio_bitrate': '128k'
+        }
+        is_valid, error_msg = self.compressor.validate_quality_settings(settings)
+        self.assertFalse(is_valid)
+        self.assertIn("CRF must be between 0 and 51", error_msg)
+
+    def test_validate_quality_settings_invalid_preset(self):
+        """Test validation of invalid preset"""
+        settings = {
+            'crf': 23,
+            'preset': 'invalid_preset',  # Invalid preset
+            'audio_bitrate': '128k'
+        }
+        is_valid, error_msg = self.compressor.validate_quality_settings(settings)
+        self.assertFalse(is_valid)
+        self.assertIn("Preset must be one of:", error_msg)
+
+    def test_validate_quality_settings_invalid_audio_bitrate(self):
+        """Test validation of invalid audio bitrate"""
+        settings = {
+            'crf': 23,
+            'preset': 'medium',
+            'audio_bitrate': 128  # Invalid format: should be string with 'k'
+        }
+        is_valid, error_msg = self.compressor.validate_quality_settings(settings)
+        self.assertFalse(is_valid)
+        self.assertIn("Audio bitrate must be", error_msg)
+
     def tearDown(self):
         # Clean up temporary directory
         os.rmdir(self.temp_dir)
