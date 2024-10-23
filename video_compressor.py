@@ -4,6 +4,7 @@ import sys
 import subprocess
 import time
 from typing import Tuple, Optional, Dict, Union
+from tqdm import tqdm
 
 class VideoCompressor:
     VALID_PRESETS = ['ultrafast', 'superfast', 'veryfast', 'faster', 'fast', 'medium', 'slow', 'slower', 'veryslow']
@@ -102,6 +103,14 @@ class VideoCompressor:
         except:
             return None
 
+    def parse_time(self, time_str: str) -> float:
+        """Parse FFmpeg time string to seconds."""
+        try:
+            h, m, s = time_str.split(':')
+            return float(h) * 3600 + float(m) * 60 + float(s)
+        except:
+            return 0
+
     def compress_video(self, input_path: str, quality_settings: Dict[str, Union[int, str, float]] = None) -> bool:
         """
         Compress the video file using FFmpeg with custom quality settings.
@@ -136,6 +145,10 @@ class VideoCompressor:
         output_path = self.get_output_path(input_path)
         duration = self.get_video_duration(input_path)
 
+        if duration is None:
+            print("Warning: Could not determine video duration. Progress bar may be inaccurate.")
+            duration = 0
+
         # FFmpeg compression command with custom quality settings
         cmd = [
             'ffmpeg',
@@ -145,6 +158,7 @@ class VideoCompressor:
             '-preset', quality_settings.get('preset', 'medium'),
             '-c:a', 'aac',
             '-b:a', str(quality_settings.get('audio_bitrate', '128k')),
+            '-progress', 'pipe:1',
             '-y',
             output_path
         ]
@@ -160,12 +174,24 @@ class VideoCompressor:
             print("\nCompressing video...")
             start_time = time.time()
 
-            # Show progress
-            while process.poll() is None:
-                print("⏳ Processing... ", end='\r')
-                time.sleep(0.5)
-                print("⚡ Processing... ", end='\r')
-                time.sleep(0.5)
+            # Initialize progress bar
+            with tqdm(total=100, desc="Progress", unit="%") as pbar:
+                last_progress = 0
+                
+                # Read FFmpeg progress output
+                while True:
+                    output = process.stdout.readline()
+                    if output == '' and process.poll() is not None:
+                        break
+                    if output:
+                        if 'out_time=' in output:
+                            time_str = output.split('out_time=')[1].strip()
+                            current_time = self.parse_time(time_str)
+                            if duration > 0:
+                                progress = int((current_time / duration) * 100)
+                                if progress > last_progress:
+                                    pbar.update(progress - last_progress)
+                                    last_progress = progress
 
             process.wait()
 
