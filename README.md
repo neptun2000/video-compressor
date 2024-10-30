@@ -1,3 +1,5 @@
+buymeacoffee.com/michaelna
+
 # Video Compressor
 
 A Python script for compressing MOV video files using FFmpeg with advanced compression settings and progress tracking.
